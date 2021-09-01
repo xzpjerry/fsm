@@ -147,8 +147,10 @@ i = 0
 choices = [t.click_lock, t.click_next, t.click_play, t.click_previous]
 while True:
     choice = random.choice(choices)
+    print("Before state:", t.curr_state.__class__.__name__)
     try:
         choice()
     except Exception as e:
         print(e)
+    print("After state:", t.curr_state.__class__.__name__)
     input()
