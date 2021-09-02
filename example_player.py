@@ -1,12 +1,14 @@
-from fsm import BaseFSM, BaseState, BaseTransition, InvalidStateTransition
 import random
 import string
+
+from fsm import BaseFSM, BaseState, BaseTransition, InvalidStateTransition
+
 
 class Ready(BaseState):
     def setup(self, with_fsm: "AudioPlayer"):
         print("Player is ready")
 
-    def teardown(self):
+    def teardown(self, with_fsm: "AudioPlayer"):
         print("Player is about to end being ready")
 
 
@@ -15,7 +17,7 @@ class Paused(BaseState):
         print("Player is about to pause")
         with_fsm.stop_playback()
 
-    def teardown(self):
+    def teardown(self, with_fsm: "AudioPlayer"):
         print("Player is about to end pause")
 
 
@@ -24,7 +26,7 @@ class Locked(BaseState):
         print("Player is about to lock")
         with_fsm.lock()
 
-    def teardown(self):
+    def teardown(self, with_fsm: "AudioPlayer"):
         print("Player is about to end being locked")
 
 
@@ -32,7 +34,7 @@ class Playing(BaseState):
     def setup(self, with_fsm: "AudioPlayer"):
         print("Player is about to play songs")
 
-    def teardown(self):
+    def teardown(self, with_fsm: "AudioPlayer"):
         print("Player is about to end playing")
 
 
@@ -41,7 +43,7 @@ class Lock(BaseTransition):
     to_state = Locked()
 
     @staticmethod
-    def transition_action(fsm: "AudioPlayer"):
+    def transition_action(with_fsm: "AudioPlayer"):
         print("Transiting to Locked")
 
 
@@ -50,7 +52,7 @@ class Unlock(BaseTransition):
     to_state = Ready()
 
     @staticmethod
-    def transition_action(fsm: "AudioPlayer"):
+    def transition_action(with_fsm: "AudioPlayer"):
         print("Transiting to Ready")
 
 
@@ -59,9 +61,9 @@ class Resume(BaseTransition):
     to_state = Playing()
 
     @staticmethod
-    def transition_action(fsm: "AudioPlayer"):
+    def transition_action(with_fsm: "AudioPlayer"):
         print("Transiting to Playing")
-        fsm.start_playback()
+        with_fsm.start_playback()
 
 
 class Pause(BaseTransition):
@@ -69,7 +71,7 @@ class Pause(BaseTransition):
     to_state = Paused()
 
     @staticmethod
-    def transition_action(fsm: "AudioPlayer"):
+    def transition_action(with_fsm: "AudioPlayer"):
         print("Transiting to Paused")
 
 
@@ -78,11 +80,11 @@ class PlayNext(BaseTransition):
     to_state = Playing()
 
     @staticmethod
-    def transition_action(fsm: "AudioPlayer"):
+    def transition_action(with_fsm: "AudioPlayer"):
         print("Transiting to Playing")
-        next_song = fsm.get_next_song_name()
+        next_song = with_fsm.get_next_song_name()
         print("About to play", next_song)
-        fsm.play(next_song)
+        with_fsm.play(next_song)
 
 
 class PlayPrev(BaseTransition):
@@ -90,11 +92,11 @@ class PlayPrev(BaseTransition):
     to_state = Playing()
 
     @staticmethod
-    def transition_action(fsm: "AudioPlayer"):
+    def transition_action(with_fsm: "AudioPlayer"):
         print("Transiting to Playing")
-        prev_song = fsm.get_previous_song_name()
+        prev_song = with_fsm.get_previous_song_name()
         print("About to play", prev_song)
-        fsm.play(prev_song)
+        with_fsm.play(prev_song)
 
 
 class AudioPlayer(BaseFSM):
@@ -150,7 +152,7 @@ while True:
     print("Before state:", t.curr_state.__class__.__name__)
     try:
         choice()
-    except Exception as e:
+    except InvalidStateTransition as e:
         print(e)
     print("After state:", t.curr_state.__class__.__name__)
     input()
