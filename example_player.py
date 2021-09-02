@@ -144,8 +144,6 @@ class AudioPlayer(BaseFSM):
 
 
 t = AudioPlayer(Ready())
-
-i = 0
 choices = [t.click_lock, t.click_next, t.click_play, t.click_previous]
 while True:
     choice = random.choice(choices)
