@@ -1,4 +1,4 @@
-from abc import abstractmethod, abstractstaticmethod
+from abc import abstractstaticmethod
 from typing import List
 
 
@@ -20,21 +20,6 @@ class InvalidStateTransition(FSMError):
 
 
 class BaseState(metaclass=Singleton):
-    """
-    A State may fetch any required info from the FSM
-    and perform actions on the FSM when:
-        - the state is set on the FSM
-        - the FSM is about to switch the state
-    """
-
-    @abstractmethod
-    def setup(self, with_fsm: "BaseFSM"):
-        raise NotImplementedError
-
-    @abstractmethod
-    def teardown(self, with_fsm: "BaseFSM"):
-        raise NotImplementedError
-
     def __str__(self) -> str:
         return self.__class__.__name__
 
@@ -61,27 +46,35 @@ class BaseTransition(metaclass=Singleton):
     to_state: BaseState = None
 
     @abstractstaticmethod
-    def transition_action(with_fsm: BaseFSM):
+    def before_state_change(with_fsm: BaseFSM):
+        raise NotImplementedError
+
+    @abstractstaticmethod
+    def after_state_change(with_fsm: "BaseFSM"):
         raise NotImplementedError
 
     def __call__(self, fsm: BaseFSM):
-        for method in [
-            self.transition_action,
-            fsm.curr_state.teardown,
-            self.to_state.setup,
-        ]:
-            if fsm.curr_state in self.from_state:
-                try:
-                    method(with_fsm=fsm)
-                except Exception as e:
-                    raise InvalidStateTransition(
-                        f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: {e}"
-                    )
-            else:
-                break
-        else:
+        if fsm.curr_state in self.from_state:
+            try:
+                # actions before state-change
+                self.before_state_change(with_fsm=fsm)
+            except Exception as e:
+                raise InvalidStateTransition(
+                    f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: {e}"
+                )
+
+        if fsm.curr_state in self.from_state:
+            # state-change
             fsm.curr_state = self.to_state
-            return
+            # actions after state-change
+            try:
+                self.after_state_change(with_fsm=fsm)
+            except Exception as e:
+                raise InvalidStateTransition(
+                    f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: {e}"
+                )
+            else:
+                return
         raise InvalidStateTransition(
             f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: src state is not in {[str(state) for state in self.from_state]}"
         )

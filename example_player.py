@@ -5,37 +5,19 @@ from fsm import BaseFSM, BaseState, BaseTransition, InvalidStateTransition
 
 
 class Ready(BaseState):
-    def setup(self, with_fsm: "AudioPlayer"):
-        print("Player is ready")
-
-    def teardown(self, with_fsm: "AudioPlayer"):
-        print("Player is about to end being ready")
+    ...
 
 
 class Paused(BaseState):
-    def setup(self, with_fsm: "AudioPlayer"):
-        print("Player is about to pause")
-        with_fsm.stop_playback()
-
-    def teardown(self, with_fsm: "AudioPlayer"):
-        print("Player is about to end pause")
+    ...
 
 
 class Locked(BaseState):
-    def setup(self, with_fsm: "AudioPlayer"):
-        print("Player is about to lock")
-        with_fsm.lock()
-
-    def teardown(self, with_fsm: "AudioPlayer"):
-        print("Player is about to end being locked")
+    ...
 
 
 class Playing(BaseState):
-    def setup(self, with_fsm: "AudioPlayer"):
-        print("Player is about to play songs")
-
-    def teardown(self, with_fsm: "AudioPlayer"):
-        print("Player is about to end playing")
+    ...
 
 
 class Lock(BaseTransition):
@@ -43,8 +25,12 @@ class Lock(BaseTransition):
     to_state = Locked()
 
     @staticmethod
-    def transition_action(with_fsm: "AudioPlayer"):
+    def before_state_change(with_fsm: "AudioPlayer"):
         print("Transiting to Locked")
+
+    @staticmethod
+    def after_state_change(with_fsm: "AudioPlayer"):
+        print("Player is Locked")
 
 
 class Unlock(BaseTransition):
@@ -52,8 +38,12 @@ class Unlock(BaseTransition):
     to_state = Ready()
 
     @staticmethod
-    def transition_action(with_fsm: "AudioPlayer"):
+    def before_state_change(with_fsm: "AudioPlayer"):
         print("Transiting to Ready")
+
+    @staticmethod
+    def after_state_change(with_fsm: "AudioPlayer"):
+        print("Player is Ready")
 
 
 class Resume(BaseTransition):
@@ -61,9 +51,13 @@ class Resume(BaseTransition):
     to_state = Playing()
 
     @staticmethod
-    def transition_action(with_fsm: "AudioPlayer"):
+    def before_state_change(with_fsm: "AudioPlayer"):
         print("Transiting to Playing")
         with_fsm.start_playback()
+
+    @staticmethod
+    def after_state_change(with_fsm: "AudioPlayer"):
+        print("Player is Playing")
 
 
 class Pause(BaseTransition):
@@ -71,8 +65,12 @@ class Pause(BaseTransition):
     to_state = Paused()
 
     @staticmethod
-    def transition_action(with_fsm: "AudioPlayer"):
+    def before_state_change(with_fsm: "AudioPlayer"):
         print("Transiting to Paused")
+
+    @staticmethod
+    def after_state_change(with_fsm: "AudioPlayer"):
+        print("Player is Paused")
 
 
 class PlayNext(BaseTransition):
@@ -80,11 +78,15 @@ class PlayNext(BaseTransition):
     to_state = Playing()
 
     @staticmethod
-    def transition_action(with_fsm: "AudioPlayer"):
+    def before_state_change(with_fsm: "AudioPlayer"):
         print("Transiting to Playing")
         next_song = with_fsm.get_next_song_name()
         print("About to play", next_song)
         with_fsm.play(next_song)
+
+    @staticmethod
+    def after_state_change(with_fsm: "AudioPlayer"):
+        print("Player is Playing")
 
 
 class PlayPrev(BaseTransition):
@@ -92,26 +94,30 @@ class PlayPrev(BaseTransition):
     to_state = Playing()
 
     @staticmethod
-    def transition_action(with_fsm: "AudioPlayer"):
+    def before_state_change(with_fsm: "AudioPlayer"):
         print("Transiting to Playing")
         prev_song = with_fsm.get_previous_song_name()
         print("About to play", prev_song)
         with_fsm.play(prev_song)
 
+    @staticmethod
+    def after_state_change(with_fsm: "AudioPlayer"):
+        print("Player is Playing")
+
 
 class AudioPlayer(BaseFSM):
     # UI Delegate methods
     def click_lock(self):
-        try:
-            Lock()(self)
-        except InvalidStateTransition:
+        if self.curr_state is Locked():
             Unlock()(self)
+        else:
+            Lock()(self)
 
     def click_play(self):
-        try:
-            Resume()(self)
-        except InvalidStateTransition:
+        if self.curr_state is Playing():
             Pause()(self)
+        else:
+            Resume()(self)
 
     def click_next(self):
         PlayNext()(self)
