@@ -21,11 +21,12 @@ class InvalidStateTransition(FSMError):
 
 class BaseState(metaclass=Singleton):
     """
-        A State may fetch any required info from the FSM
-        and perform actions on the FSM when:
-            - the state is set on the FSM 
-            - the FSM is about to switch the state
+    A State may fetch any required info from the FSM
+    and perform actions on the FSM when:
+        - the state is set on the FSM
+        - the FSM is about to switch the state
     """
+
     @abstractmethod
     def setup(self, with_fsm: "BaseFSM"):
         raise NotImplementedError
@@ -40,9 +41,10 @@ class BaseState(metaclass=Singleton):
 
 class BaseFSM:
     """
-        FSM stores a concrete state recording its current
-        state
+    FSM stores a concrete state recording its current
+    state
     """
+
     curr_state: BaseState = None
 
     def __init__(self, init_state: BaseState, *args, **kwargs) -> None:
@@ -51,9 +53,10 @@ class BaseFSM:
 
 class BaseTransition(metaclass=Singleton):
     """
-        A Transition checks for the FSM's current state
-        and decide whether to perform the transition or not.
+    A Transition checks for the FSM's current state
+    and decide whether to perform the transition or not.
     """
+
     from_state: List[BaseState] = None
     to_state: BaseState = None
 
@@ -62,18 +65,23 @@ class BaseTransition(metaclass=Singleton):
         raise NotImplementedError
 
     def __call__(self, fsm: BaseFSM):
-        if fsm.curr_state in self.from_state:
-            try:
-                self.transition_action(with_fsm=fsm)
-                fsm.curr_state.teardown(with_fsm=fsm)
-                self.to_state.setup(with_fsm=fsm)
-            except Exception as e:
-                raise InvalidStateTransition(
-                    f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: {e}"
-                )
+        for method in [
+            self.transition_action,
+            fsm.curr_state.teardown,
+            self.to_state.setup,
+        ]:
+            if fsm.curr_state in self.from_state:
+                try:
+                    method(with_fsm=fsm)
+                except Exception as e:
+                    raise InvalidStateTransition(
+                        f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: {e}"
+                    )
             else:
-                fsm.curr_state = self.to_state
-                return
+                break
+        else:
+            fsm.curr_state = self.to_state
+            return
         raise InvalidStateTransition(
             f"Unable to perform the transition from {fsm.curr_state} to {self.to_state}: src state is not in {[str(state) for state in self.from_state]}"
         )
